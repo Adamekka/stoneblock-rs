@@ -5,11 +5,9 @@ in vec3 color;
 
 out vec3 vColor;
 
-uniform float step;
+uniform mat4 matrix;
 
 void main() {
-  vec2 pos = position;
-  pos.x += step;
-  gl_Position = vec4(pos, 0.0, 1.0);
+  gl_Position = matrix * vec4(position, 0.0, 1.0);
   vColor = color;
 }

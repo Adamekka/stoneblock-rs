@@ -83,6 +83,15 @@ fn draw(
     program: &glium::Program,
     step: f32,
 ) {
+    let uniforms = uniform! {
+        matrix: [
+            [step.cos(), step.sin(), 0.0, 0.0],
+            [-step.sin(), step.cos(), 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0f32],
+        ]
+    };
+
     let mut frame = display.draw();
     frame.clear_color(0.0, 0.0, 0.0, 0.0);
     frame
@@ -90,7 +99,7 @@ fn draw(
             vertex_buffer,
             index_buffer,
             program,
-            &uniform! { step: step },
+            &uniforms,
             &Default::default(),
         )
         .unwrap();
