@@ -3,7 +3,8 @@ use glium::{glutin, implement_vertex, index::NoIndices, uniform, Surface, Vertex
 #[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 2],
-    color: [f32; 3],
+    // color: [f32; 3],
+    tex_coords: [f32; 2],
 }
 
 fn main() {
@@ -13,22 +14,37 @@ fn main() {
     let display = glium::Display::new(window_builder, context_builder, &event_loop)
         .expect("Failed to create display");
 
+    // Load image
+    let image = image::load(
+        std::io::Cursor::new(&include_bytes!("../src/images/ferris.png")),
+        image::ImageFormat::Png,
+    )
+    .unwrap()
+    .to_rgba8();
+    let image_dimensions = image.dimensions();
+    let image =
+        glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+    let texture = glium::texture::Texture2d::new(&display, image).unwrap();
+
     let shape: [Vertex; 3] = [
         Vertex {
             position: [-0.5, -0.5],
-            color: [0.0, 1.0, 0.0],
+            tex_coords: [0.0, 0.0],
+            // color: [0.0, 1.0, 0.0],
         },
         Vertex {
             position: [0.5, -0.5],
-            color: [0.0, 0.0, 1.0],
+            tex_coords: [1.0, 0.0],
+            // color: [0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.0, 0.5],
-            color: [1.0, 0.0, 0.0],
+            tex_coords: [0.0, 1.0],
+            // color: [1.0, 0.0, 0.0],
         },
     ];
 
-    implement_vertex!(Vertex, position, color);
+    implement_vertex!(Vertex, position, tex_coords);
 
     let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
 
@@ -47,7 +63,7 @@ fn main() {
     let mut step: f32 = -0.5;
 
     // Draw the triangle
-    draw(&display, &vertex_buffer, &indices, &program, step);
+    draw(&display, &vertex_buffer, &indices, &program, &texture, step);
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = match event {
@@ -70,7 +86,7 @@ fn main() {
             step = -0.5;
         }
 
-        draw(&display, &vertex_buffer, &indices, &program, step);
+        draw(&display, &vertex_buffer, &indices, &program, &texture, step);
     });
 }
 
@@ -81,6 +97,7 @@ fn draw(
     vertex_buffer: &VertexBuffer<Vertex>,
     index_buffer: &NoIndices,
     program: &glium::Program,
+    texture: &glium::texture::Texture2d,
     step: f32,
 ) {
     let uniforms = uniform! {
@@ -89,7 +106,8 @@ fn draw(
             [-step.sin(), step.cos(), 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 1.0f32],
-        ]
+        ],
+        tex: texture,
     };
 
     let mut frame = display.draw();
