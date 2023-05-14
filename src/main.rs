@@ -137,10 +137,11 @@ fn draw(
         matrix: [
             [step.cos() / 100.0, -step.sin() / 100.0, 0.0, 0.0],
             [step.sin() / 100.0, step.cos() / 100.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.01, 0.0],
             [0.0, 0.0, 0.0, 1.0f32],
         ],
         // tex: texture,
+        u_light: [-1.0, 0.4, 0.9f32]
     };
 
     let mut frame = display.draw();
