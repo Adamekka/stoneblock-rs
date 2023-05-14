@@ -13,7 +13,7 @@ use teapot::{Normal, Vertex};
 fn main() {
     let event_loop = glutin::event_loop::EventLoop::new();
     let window_builder = glutin::window::WindowBuilder::new().with_title("StoneBlock by Adamekka");
-    let context_builder = glutin::ContextBuilder::new();
+    let context_builder = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(window_builder, context_builder, &event_loop)
         .expect("Failed to create display");
 
@@ -144,15 +144,24 @@ fn draw(
         u_light: [-1.0, 0.4, 0.9f32]
     };
 
+    let draw_parameters = glium::DrawParameters {
+        depth: glium::Depth {
+            test: glium::draw_parameters::DepthTest::IfLess,
+            write: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
     let mut frame = display.draw();
-    frame.clear_color(0.0, 0.0, 0.0, 0.0);
+    frame.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
     frame
         .draw(
             (positions, normals),
             index_buffer,
             program,
             &uniforms,
-            &Default::default(),
+            &draw_parameters,
         )
         .unwrap();
     frame.finish().unwrap();
