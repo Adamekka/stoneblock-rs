@@ -133,15 +133,42 @@ fn draw(
     // texture: &glium::texture::Texture2d,
     step: f32,
 ) {
+    let mut frame = display.draw();
+    frame.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
+
+    let perspective: [[f32; 4]; 4] = {
+        let (width, height) = frame.get_dimensions();
+        let aspect_ratio = height as f32 / width as f32;
+
+        let fov: f32 = std::f32::consts::PI / 3.0;
+        let zfar: f32 = 1024.0;
+        let znear: f32 = 0.1;
+
+        let f = 1.0 / (fov / 2.0).tan();
+
+        [
+            [f * aspect_ratio, 0.0, 0.0, 0.0],
+            [0.0, f, 0.0, 0.0],
+            [
+                0.0,
+                0.0,
+                (zfar + znear) / (zfar - znear),
+                -(2.0 * zfar * znear) / (zfar - znear),
+            ],
+            [0.0, 0.0, 1.0, 0.0],
+        ]
+    };
+
     let uniforms = uniform! {
         matrix: [
             [step.cos() / 100.0, -step.sin() / 100.0, 0.0, 0.0],
             [step.sin() / 100.0, step.cos() / 100.0, 0.0, 0.0],
-            [0.0, 0.0, 0.01, 0.0],
+            [0.0, 0.0, 0.01, 2.0],
             [0.0, 0.0, 0.0, 1.0f32],
         ],
         // tex: texture,
-        u_light: [-1.0, 0.4, 0.9f32]
+        u_light: [-1.0, 0.4, 0.9f32],
+        perspective: perspective,
     };
 
     let draw_parameters = glium::DrawParameters {
@@ -153,8 +180,6 @@ fn draw(
         ..Default::default()
     };
 
-    let mut frame = display.draw();
-    frame.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
     frame
         .draw(
             (positions, normals),
