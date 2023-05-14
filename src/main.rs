@@ -158,16 +158,21 @@ fn draw(
         ]
     };
 
+    let model: [[f32; 4]; 4] = [
+        [step.cos() / 100.0, -step.sin() / 100.0, 0.0, 0.0],
+        [step.sin() / 100.0, step.cos() / 100.0, 0.0, 0.0],
+        [0.0, 0.0, 0.01, 2.0],
+        [0.0, 0.0, 0.0, 1.0f32],
+    ];
+
+    let view: [[f32; 4]; 4] = view_matrix(&[2.0, -1.0, 1.0], &[-2.0, 1.0, 1.0], &[0.0, 1.0, 0.0]);
+
     let uniforms = uniform! {
-        matrix: [
-            [step.cos() / 100.0, -step.sin() / 100.0, 0.0, 0.0],
-            [step.sin() / 100.0, step.cos() / 100.0, 0.0, 0.0],
-            [0.0, 0.0, 0.01, 2.0],
-            [0.0, 0.0, 0.0, 1.0f32],
-        ],
+        model: model,
         // tex: texture,
         u_light: [-1.0, 0.4, 0.9f32],
         perspective: perspective,
+        view: view,
     };
 
     let draw_parameters = glium::DrawParameters {
@@ -189,4 +194,44 @@ fn draw(
         )
         .unwrap();
     frame.finish().unwrap();
+}
+
+fn view_matrix(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -> [[f32; 4]; 4] {
+    let f: [f32; 3] = {
+        let f: &[f32; 3] = direction;
+        let len: f32 = f[0] * f[0] + f[1] * f[1] + f[2] * f[2];
+        let len: f32 = len.sqrt();
+        [f[0] / len, f[1] / len, f[2] / len]
+    };
+
+    let s: [f32; 3] = [
+        up[1] * f[2] - up[2] * f[1],
+        up[2] * f[0] - up[0] * f[2],
+        up[0] * f[1] - up[1] * f[0],
+    ];
+
+    let s_norm: [f32; 3] = {
+        let len: f32 = s[0] * s[0] + s[1] * s[1] + s[2] * s[2];
+        let len: f32 = len.sqrt();
+        [s[0] / len, s[1] / len, s[2] / len]
+    };
+
+    let u: [f32; 3] = [
+        f[1] * s_norm[2] - f[2] * s_norm[1],
+        f[2] * s_norm[0] - f[0] * s_norm[2],
+        f[0] * s_norm[1] - f[1] * s_norm[0],
+    ];
+
+    let p: [f32; 3] = [
+        -position[0] * s_norm[0] - position[1] * s_norm[1] - position[2] * s_norm[2],
+        -position[0] * u[0] - position[1] * u[1] - position[2] * u[2],
+        -position[0] * f[0] - position[1] * f[1] - position[2] * f[2],
+    ];
+
+    [
+        [s_norm[0], s_norm[1], s_norm[2], p[0]],
+        [u[0], u[1], u[2], p[1]],
+        [f[0], f[1], f[2], p[2]],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
 }
