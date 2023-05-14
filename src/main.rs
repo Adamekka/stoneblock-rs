@@ -120,8 +120,7 @@ fn main() {
     });
 }
 
-/// Draw a frame\
-/// Draw black background and triangle
+/// Draw a frame
 fn draw(
     display: &glium::Display,
     positions: &VertexBuffer<Vertex>,
