@@ -1,11 +1,14 @@
-use glium::{glutin, implement_vertex, index::NoIndices, uniform, Surface, VertexBuffer};
+mod teapot;
 
-#[derive(Copy, Clone)]
-struct Vertex {
-    position: [f32; 2],
-    // color: [f32; 3],
-    tex_coords: [f32; 2],
-}
+use glium::{glutin, uniform, Surface, VertexBuffer};
+use teapot::{Normal, Vertex};
+
+// #[derive(Copy, Clone)]
+// struct Vertex {
+//     position: [f32; 2],
+//     // color: [f32; 3],
+//     tex_coords: [f32; 2],
+// }
 
 fn main() {
     let event_loop = glutin::event_loop::EventLoop::new();
@@ -14,56 +17,76 @@ fn main() {
     let display = glium::Display::new(window_builder, context_builder, &event_loop)
         .expect("Failed to create display");
 
-    // Load image
-    let image = image::load(
-        std::io::Cursor::new(&include_bytes!("../src/images/ferris.png")),
-        image::ImageFormat::Png,
+    let positions = glium::VertexBuffer::new(&display, &teapot::VERTICES).unwrap();
+    let normals = glium::VertexBuffer::new(&display, &teapot::NORMALS).unwrap();
+    let index_buffer = glium::IndexBuffer::new(
+        &display,
+        glium::index::PrimitiveType::TrianglesList,
+        &teapot::INDICES,
     )
-    .unwrap()
-    .to_rgba8();
-    let image_dimensions = image.dimensions();
-    let image =
-        glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    let texture = glium::texture::Texture2d::new(&display, image).unwrap();
+    .unwrap();
 
-    let shape: [Vertex; 3] = [
-        Vertex {
-            position: [-0.5, -0.5],
-            tex_coords: [0.0, 0.0],
-            // color: [0.0, 1.0, 0.0],
-        },
-        Vertex {
-            position: [0.5, -0.5],
-            tex_coords: [1.0, 0.0],
-            // color: [0.0, 0.0, 1.0],
-        },
-        Vertex {
-            position: [0.0, 0.5],
-            tex_coords: [0.0, 1.0],
-            // color: [1.0, 0.0, 0.0],
-        },
-    ];
+    // Load image
+    // let image = image::load(
+    //     std::io::Cursor::new(&include_bytes!("../src/images/ferris.png")),
+    //     image::ImageFormat::Png,
+    // )
+    // .unwrap()
+    // .to_rgba8();
+    // let image_dimensions = image.dimensions();
+    // let image =
+    //     glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+    // let texture = glium::texture::Texture2d::new(&display, image).unwrap();
 
-    implement_vertex!(Vertex, position, tex_coords);
+    // let shape: [Vertex; 3] = [
+    //     Vertex {
+    //         position: [-0.5, -0.5],
+    //         tex_coords: [0.0, 0.0],
+    //         // color: [0.0, 1.0, 0.0],
+    //     },
+    //     Vertex {
+    //         position: [0.5, -0.5],
+    //         tex_coords: [1.0, 0.0],
+    //         // color: [0.0, 0.0, 1.0],
+    //     },
+    //     Vertex {
+    //         position: [0.0, 0.5],
+    //         tex_coords: [0.0, 1.0],
+    //         // color: [1.0, 0.0, 0.0],
+    //     },
+    // ];
 
-    let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
+    // implement_vertex!(Vertex, position, tex_coords);
+
+    // let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
 
     // Build the index buffer
-    let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
+    // let indices = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
 
     // Compile shaders and link them together
-    let triangle_vertex = std::fs::read_to_string("src/shaders/triangle.vert")
-        .expect("Failed to read triangle_vertex.glsl");
-    let triangle_fragment = std::fs::read_to_string("src/shaders/triangle.frag")
-        .expect("Failed to read triangle_fragment.glsl");
+    // let triangle_vertex = std::fs::read_to_string("src/shaders/triangle.vert")
+    //     .expect("Failed to read triangle.vert");
+    // let triangle_fragment = std::fs::read_to_string("src/shaders/triangle.frag")
+    //     .expect("Failed to read triangle.frag");
+    let teapot_vertex =
+        std::fs::read_to_string("src/shaders/teapot.vert").expect("Failed to read teapot.vert");
+    let teapot_fragment =
+        std::fs::read_to_string("src/shaders/teapot.frag").expect("Failed to read teapot.frag");
 
     let program =
-        glium::Program::from_source(&display, &triangle_vertex, &triangle_fragment, None).unwrap();
+        glium::Program::from_source(&display, &teapot_vertex, &teapot_fragment, None).unwrap();
 
-    let mut step: f32 = -0.5;
+    let mut step: f32 = -0.25;
 
     // Draw the triangle
-    draw(&display, &vertex_buffer, &indices, &program, &texture, step);
+    draw(
+        &display,
+        &positions,
+        &normals,
+        &index_buffer,
+        &program,
+        step,
+    );
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = match event {
@@ -82,11 +105,18 @@ fn main() {
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
         step += 0.0002;
-        if step > 0.5 {
-            step = -0.5;
+        if step > 0.75 {
+            step = -0.25;
         }
 
-        draw(&display, &vertex_buffer, &indices, &program, &texture, step);
+        draw(
+            &display,
+            &positions,
+            &normals,
+            &index_buffer,
+            &program,
+            step,
+        );
     });
 }
 
@@ -94,27 +124,30 @@ fn main() {
 /// Draw black background and triangle
 fn draw(
     display: &glium::Display,
-    vertex_buffer: &VertexBuffer<Vertex>,
-    index_buffer: &NoIndices,
+    positions: &VertexBuffer<Vertex>,
+    normals: &VertexBuffer<Normal>,
+    index_buffer: &glium::IndexBuffer<u16>,
+    // vertex_buffer: &VertexBuffer<Vertex>,
+    // index_buffer: &NoIndices,
     program: &glium::Program,
-    texture: &glium::texture::Texture2d,
+    // texture: &glium::texture::Texture2d,
     step: f32,
 ) {
     let uniforms = uniform! {
         matrix: [
-            [step.cos(), step.sin(), 0.0, 0.0],
-            [-step.sin(), step.cos(), 0.0, 0.0],
+            [step.cos() / 100.0, -step.sin() / 100.0, 0.0, 0.0],
+            [step.sin() / 100.0, step.cos() / 100.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 1.0f32],
         ],
-        tex: texture,
+        // tex: texture,
     };
 
     let mut frame = display.draw();
     frame.clear_color(0.0, 0.0, 0.0, 0.0);
     frame
         .draw(
-            vertex_buffer,
+            (positions, normals),
             index_buffer,
             program,
             &uniforms,
